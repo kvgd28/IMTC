@@ -1,0 +1,16 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <name>Maven Default Project</name>
+    <modules>
+        <module>graph</module>
+    </modules>
+    <groupId>com.imtc.app</groupId>
+    <artifactId>main</artifactId>
+    <version>1</version>
+
+    <plugins>
+
+    </plugins>
+
+</project>
