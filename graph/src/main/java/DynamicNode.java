@@ -5,6 +5,7 @@ public class DynamicNode {
     double costFromSource;
     List<String> pathTaken;
     int numberOfSeatChanges;
+    int weekDay;
 
 
     public DynamicNode() {
@@ -15,6 +16,22 @@ public class DynamicNode {
         this.costFromSource = costFromSource;
         this.pathTaken = pathTaken;
         this.numberOfSeatChanges = numberOfSeatChanges;
+    }
+
+    public DynamicNode(Node node, double costFromSource, List<String> pathTaken, int numberOfSeatChanges, int weekDay) {
+        this.node = node;
+        this.costFromSource = costFromSource;
+        this.pathTaken = pathTaken;
+        this.numberOfSeatChanges = numberOfSeatChanges;
+        this.weekDay = weekDay;
+    }
+
+    public int getWeekDay() {
+        return weekDay;
+    }
+
+    public void setWeekDay(int weekDay) {
+        this.weekDay = weekDay;
     }
 
     public int getNumberOfSeatChanges() {
