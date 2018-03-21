@@ -4,6 +4,7 @@
     <name>Maven Default Project</name>
     <modules>
         <module>graph</module>
+        <module>railwayApi</module>
     </modules>
     <groupId>com.imtc.app</groupId>
     <artifactId>main</artifactId>
