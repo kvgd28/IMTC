@@ -1,4 +1,6 @@
-public class Departure {
+import java.io.Serializable;
+
+public class Departure implements Serializable{
     Double[] departureTimes;
 
     Departure(){

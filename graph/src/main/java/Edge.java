@@ -1,8 +1,10 @@
-public class Edge {
+import java.io.Serializable;
+
+public class Edge implements Serializable{
     Node startStationNode;
     Station endStation;
-    double travelTime;
-    double ticketCost;
+    Double travelTime;
+    Double ticketCost;
 
     public Edge() {
     }

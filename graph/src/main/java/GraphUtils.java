@@ -1,5 +1,7 @@
 import scala.Tuple2;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class GraphUtils {
@@ -18,15 +20,16 @@ public class GraphUtils {
                 Station station = new Station(stationCode);
                 existingStations.put(stationCode,station);
             }
-            Node node = new Node(existingStations.get(stationCode), train);
+            Node node = new Node(stationCode, train);
             existingStations.get(stationCode).addNode(node);
             prevNodes.add(node);
 
             for(int j=0;j<i;j++) {
                 Node prevNode = prevNodes.get(j);
                 if (prevNode != null) {
-                    Double ticketCost = ticketCostMap.get(new Tuple2<String, String>(prevNode.getStation().getStationCode(), stationCode));
-                    Double travelTime = travelTimeMap.get(new Tuple2<String, String>(prevNode.getStation().getStationCode(), stationCode));
+                    //Double ticketCost = ticketCostMap.get(new Tuple2<String, String>(prevNode.getStation().getStationCode(), stationCode));
+                    Double ticketCost = 0.0;
+                    Double travelTime = travelTimeMap.get(new Tuple2<String, String>(prevNode.getStationCode(), stationCode));
                     Edge edge = new Edge(prevNode, existingStations.get(stationCode), travelTime, ticketCost);
                     prevNode.addEdge(edge);
                 }
@@ -35,7 +38,7 @@ public class GraphUtils {
     }
 
 
-    public static List<String> applyBFS(String startStationCode, String endStationCode, Map<String,Station> existingStations, Map<Tuple2<String,String>,List<Train>> ticketAvailability,int weekDay){
+    public static List<String> applyBFS(String startStationCode, String endStationCode, Map<String,Station> existingStations, Map<Tuple2<Train,String>,SeatAvailability> seatAvailabilityMap,String date,int numberOfSeatsRequired){
         PriorityQueue<DynamicNode> queue = new PriorityQueue<DynamicNode>(
                 new Comparator<DynamicNode>() {
                     public int compare(DynamicNode o1, DynamicNode o2) {
@@ -47,6 +50,7 @@ public class GraphUtils {
         Set<Node> encounteredNodes = new HashSet<>();
 
         //initialisation
+        int weekDay = getWeekDay(date);
         for(Node node : existingStations.get(startStationCode).getNodes()){
             List<String> pathTaken = new ArrayList<>();
             pathTaken.add(startStationCode);
@@ -57,7 +61,7 @@ public class GraphUtils {
         while(queue.size()>0){
             DynamicNode top = queue.poll();
             Node currentNode = top.getNode();
-            if(currentNode.getStation().getStationCode().equals(endStationCode)){
+            if(currentNode.getStationCode().equals(endStationCode)){
                 return top.getPathTaken();
             }
             if(encounteredNodes.contains(currentNode)){
@@ -65,10 +69,10 @@ public class GraphUtils {
             }
             Set<Edge> edges = top.getNode().getEdges();
             for(Edge edge : edges){
-                if(isTicketAvailable(edge,ticketAvailability)) {
+                if(isTicketAvailable(edge,seatAvailabilityMap.get(new Tuple2<>(top.getNode().getTrain(),date)),numberOfSeatsRequired)) {
                     for (Node nextLevelNode : edge.getEndStation().getNodes()) {
                         if (!encounteredNodes.contains(nextLevelNode)) {
-                            int nextWeekDay = (top.getWeekDay() + (int)((currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStation().getStationCode(),weekDay) +
+                            int nextWeekDay = (top.getWeekDay() + (int)((currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStationCode(),weekDay) +
                                     edge.getTravelTime())/86400))%7;
                             if(isWithinTime(currentNode,nextLevelNode,edge.getTravelTime(),top.getWeekDay(),nextWeekDay)) {
                                 int numberOfSeatChanges = top.getNumberOfSeatChanges() + 1;
@@ -81,8 +85,8 @@ public class GraphUtils {
                                 }
                                 Double seatChangeCost = 500.0;
 
-                                Double waitingTimeCost = (nextLevelNode.getTrain().getDepTimeFromStationOnADay(nextLevelNode.getStation().getStationCode(),nextWeekDay)-
-                                        (int)((currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStation().getStationCode(),top.getWeekDay())+edge.getTravelTime())/86400)) * 0.1;
+                                Double waitingTimeCost = (nextLevelNode.getTrain().getDepTimeFromStationOnADay(nextLevelNode.getStationCode(),nextWeekDay)-
+                                        (int)((currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStationCode(),top.getWeekDay())+edge.getTravelTime())/86400)) * 0.1;
                                 Double costFromSource = top.getCostFromSource() + edge.costAcrossTheEdge() + trainChangeCost + seatChangeCost + waitingTimeCost;
 
 
@@ -100,7 +104,7 @@ public class GraphUtils {
     }
 
 
-    public static List<String> applyBFSForOneTrain(String startStationCode, String endStationCode, Map<String,Station> existingStations, Map<Tuple2<String,String>,List<Train>> ticketAvailability,int weekDay){
+    public static List<String> applyBFSForOneTrain(String startStationCode, String endStationCode, Map<String,Station> existingStations, SeatAvailability seatAvailability,String date,int numberOfSeatsRequired){
         PriorityQueue<DynamicNode> queue = new PriorityQueue<DynamicNode>(
                 new Comparator<DynamicNode>() {
                     public int compare(DynamicNode o1, DynamicNode o2) {
@@ -112,6 +116,7 @@ public class GraphUtils {
         Set<Node> encounteredNodes = new HashSet<>();
 
         //initialisation
+        int weekDay = getWeekDay(date);
         for(Node node : existingStations.get(startStationCode).getNodes()){
             if(node.getTrain().isTrainRunsOnWday(weekDay)) {
                 List<String> pathTaken = new ArrayList<>();
@@ -124,7 +129,7 @@ public class GraphUtils {
         while(queue.size()>0){
             DynamicNode top = queue.poll();
             Node currentNode = top.getNode();
-            if(currentNode.getStation().getStationCode().equals(endStationCode)){
+            if(currentNode.getStationCode().equals(endStationCode)){
                 return top.getPathTaken();
             }
             if(encounteredNodes.contains(currentNode)){
@@ -132,7 +137,7 @@ public class GraphUtils {
             }
             Set<Edge> edges = top.getNode().getEdges();
             for(Edge edge : edges){
-                if(isTicketAvailable(edge,ticketAvailability)) {
+                if(isTicketAvailable(edge,seatAvailability,numberOfSeatsRequired)) {
                     for (Node nextLevelNode : edge.getEndStation().getNodes()) {
                         if(nextLevelNode.getTrain().equals(currentNode.getTrain())) {
                             if (!encounteredNodes.contains(nextLevelNode)) {
@@ -158,8 +163,8 @@ public class GraphUtils {
     }
 
     private static Boolean isWithinTime(Node currentNode, Node nextLevelNode, Double travelTime, int currentWeekDay, int nextWeekDay){
-        Double currentNodeTime = currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStation().getStationCode(),currentWeekDay);
-        Double nextNodeTime = nextLevelNode.getTrain().getDepTimeFromStationOnADay(nextLevelNode.getStation().getStationCode(),nextWeekDay);
+        Double currentNodeTime = currentNode.getTrain().getDepTimeFromStationOnADay(currentNode.getStationCode(),currentWeekDay);
+        Double nextNodeTime = nextLevelNode.getTrain().getDepTimeFromStationOnADay(nextLevelNode.getStationCode(),nextWeekDay);
         if(currentWeekDay==nextWeekDay) {
             if (currentNodeTime <= nextNodeTime) {
                 return (currentNodeTime + travelTime) <= nextNodeTime;
@@ -170,18 +175,34 @@ public class GraphUtils {
         return false;
     }
 
-    private static Boolean isTicketAvailable(Edge edge, Map<Tuple2<String,String>,List<Train>> ticketAvailability){
-        try {
-            Tuple2<String, String> tuple = new Tuple2<>(edge.startStationNode.getStation().getStationCode(), edge.getEndStation().getStationCode());
-            if (ticketAvailability.containsKey(tuple)) {
-                if (ticketAvailability.get(tuple).contains(edge.getStartStationNode().getTrain())) {
-                    return true;
+    private static Boolean isTicketAvailable(Edge edge, SeatAvailability seatAvailability,int numberOfSeatsRequired){
+        if(seatAvailability!=null) {
+            try {
+                Tuple2<String, String> tuple = new Tuple2<>(edge.startStationNode.getStationCode(), edge.getEndStation().getStationCode());
+                Map<Tuple2<String, String>, Integer> ticketAvailability = seatAvailability.getTicketAvailability();
+                if (ticketAvailability.containsKey(tuple)) {
+                    if (ticketAvailability.get(tuple) >= numberOfSeatsRequired) {
+                        return true;
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }catch(Exception e){
-
         }
         return false;
+    }
+
+    public static Integer getWeekDay(String dateInString){
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+        try {
+            Date date = formatter.parse(dateInString);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            return calendar.get(Calendar.DAY_OF_WEEK);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static void main(String[] args){
@@ -192,6 +213,7 @@ public class GraphUtils {
         stationCodes.add("s4");
         Map<Integer,Boolean> runningDays = new HashMap<>();
         runningDays.put(1,true);
+        runningDays.put(4,true);
         Train train = new Train("123");
         train.setDays(runningDays);
         train.setStations(stationCodes);
@@ -236,21 +258,23 @@ public class GraphUtils {
 
         //System.out.println(existingStations.get("s2").getNode(train).edges.size());
 
-        Map<Tuple2<String,String>,List<Train>> ticketAvailability = new HashMap<>();
+        Map<Tuple2<String,String>,Integer> ticketAvailability = new HashMap<>();
         List<Train> firstTrains = new ArrayList<>();
         firstTrains.add(train);
-        ticketAvailability.put(new Tuple2<>("s1","s4"),firstTrains);
-        ticketAvailability.put(new Tuple2<>("s1","s2"),firstTrains);
-        ticketAvailability.put(new Tuple2<>("s1","s3"),firstTrains);
-        ticketAvailability.put(new Tuple2<>("s2","s3"),firstTrains);
-        ticketAvailability.put(new Tuple2<>("s2","s4"),firstTrains);
-        ticketAvailability.put(new Tuple2<>("s3","s4"),firstTrains);
+        ticketAvailability.put(new Tuple2<>("s1","s4"),1);
+        ticketAvailability.put(new Tuple2<>("s1","s2"),1);
+        ticketAvailability.put(new Tuple2<>("s1","s3"),1);
+        ticketAvailability.put(new Tuple2<>("s2","s3"),1);
+        ticketAvailability.put(new Tuple2<>("s2","s4"),1);
+        ticketAvailability.put(new Tuple2<>("s3","s4"),1);
 
         List<Train> secondTrains = new ArrayList<>();
         secondTrains.add(train2);
-        ticketAvailability.put(new Tuple2<>("s1","s2"),secondTrains);
+        ticketAvailability.put(new Tuple2<>("s1","s2"),1);
 
-        System.out.println(applyBFSForOneTrain("s1","s4",existingStations, ticketAvailability, 1));
+        SeatAvailability seatAvailability = new SeatAvailability(ticketAvailability);
+
+        System.out.println(applyBFSForOneTrain("s1","s4",existingStations, seatAvailability, "28-03-2018",2));
 
     }
 }

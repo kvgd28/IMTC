@@ -1,11 +1,11 @@
 import scala.Tuple2;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class Train {
+public class Train implements Serializable{
     String trainNumber;
     Map<String,Departure> departureTimes;
     List<String> stations;

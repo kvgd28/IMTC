@@ -1,22 +1,23 @@
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Node {
+public class Node implements Serializable{
     Set<Edge> edges;
-    Station station;
+    String stationCode;
     Train train;
 
     public Node() {
     }
 
-    public Node(Station station, Train train) {
-        this.station = station;
+    public Node(String stationCode, Train train) {
+        this.stationCode = stationCode;
         this.train = train;
     }
 
-    public Node(Set<Edge> edges, Station station, Train train) {
+    public Node(Set<Edge> edges, String stationCode, Train train) {
         this.edges = edges;
-        this.station = station;
+        this.stationCode = stationCode;
         this.train = train;
     }
 
@@ -28,12 +29,12 @@ public class Node {
         this.edges = edges;
     }
 
-    public Station getStation() {
-        return station;
+    public String getStationCode() {
+        return stationCode;
     }
 
-    public void setStation(Station station) {
-        this.station = station;
+    public void setStationCode(String stationCode) {
+        this.stationCode = stationCode;
     }
 
     public Train getTrain() {
@@ -51,14 +52,14 @@ public class Node {
 
         Node node = (Node) o;
 
-        if (!station.equals(node.station)) return false;
-        return train.equals(node.train);
+        if (stationCode != null ? !stationCode.equals(node.stationCode) : node.stationCode != null) return false;
+        return train != null ? train.equals(node.train) : node.train == null;
     }
 
     @Override
     public int hashCode() {
-        int result = station.hashCode();
-        result = 31 * result + train.hashCode();
+        int result = stationCode != null ? stationCode.hashCode() : 0;
+        result = 31 * result + (train != null ? train.hashCode() : 0);
         return result;
     }
 

@@ -1,7 +1,8 @@
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Station {
+public class Station implements Serializable{
     String stationCode;
     Set<Node> nodes;
 
