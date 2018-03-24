@@ -2,13 +2,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import scala.Int;
 import scala.Tuple2;
 
 import java.util.*;
 
 public class ApiUtils {
-    public static final String myApiKey = "g1q2qto7gy";
+    public static final String myApiKey = "1ppsmkl7jm";
     public static final Map<String,Integer> dayMap;
     static{
         dayMap = new HashMap<String, Integer>();
@@ -39,7 +38,8 @@ public class ApiUtils {
         return null;
     }
 
-    public static void fillTrainDetails(Train train, Map<Tuple2<String,String>, Double> travelTime){
+    public static Train getTrainDetails(String trainNumber){
+        Train train = new Train(trainNumber);
         String url = "https://api.railwayapi.com/v2/route/train/%s/apikey/%s/";
         url = String.format(url,train.getTrainNumber(),myApiKey);
         String json = WebConnector.getResponseFromWeb(url);
@@ -72,10 +72,16 @@ public class ApiUtils {
             List<Double> prevStationsDepartureTimes = new ArrayList<Double>();
             List<String> prevStationsWeekDays = new ArrayList<String>();
             for(JsonElement station : route){
-                String stationId = station.getAsJsonObject().getAsJsonObject("station").get("name").getAsString();
+                String stationId = station.getAsJsonObject().getAsJsonObject("station").get("code").getAsString();
                 String currDepTimeString = station.getAsJsonObject().get("schdep").getAsString();
-                Double currDepTime = convertTimeStringToDouble(currDepTimeString);
                 String currArrTimeString = station.getAsJsonObject().get("scharr").getAsString();
+                if(currArrTimeString.equals("SOURCE")){
+                    currArrTimeString = currDepTimeString;
+                }
+                if(currDepTimeString.equals("DEST")){
+                    currDepTimeString = currArrTimeString;
+                }
+                Double currDepTime = convertTimeStringToDouble(currDepTimeString);
                 Double currArrTime = convertTimeStringToDouble(currArrTimeString);
                 String currWeekDay = station.getAsJsonObject().get("day").getAsString();
                 for(int i=0;i<prevStationsDepartureTimes.size();i++){
@@ -94,9 +100,11 @@ public class ApiUtils {
 
             train.setTicketCostMap(new HashMap<Tuple2<String, String>, Double>());
 
+            return train;
         }catch(Exception e){
             e.printStackTrace();
         }
+        return null;
     }
 
     private static Double computeTravelTime(Double prevDepTime,Double currArrTime,String prevWeekDay,String currWeekDay){
@@ -114,6 +122,9 @@ public class ApiUtils {
     }
 
     public static Map<Tuple2<String,String>,Integer> getSeatAvailabilityForATrain(Train train,String date){
+        if(train==null){
+            return null;
+        }
         Map<Tuple2<String,String>,Integer> ticketAvailability = new HashMap<Tuple2<String, String>, Integer>();
         int threshold = 0;
         int numberOfThresholdSeats = 0;
