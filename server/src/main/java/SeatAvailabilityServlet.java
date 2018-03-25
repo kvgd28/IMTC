@@ -40,8 +40,8 @@ public class SeatAvailabilityServlet extends HttpServlet {
             }
         }
 
-        if(MainServer.allTrains.get("16382")!=null && MainServer.seatAvailabilityMap.get(new Tuple2<Train, String>(MainServer.allTrains.get("16382"),"28-03-2018"))!=null &&
-                MainServer.seatAvailabilityMap.get(new Tuple2<Train, String>(MainServer.allTrains.get("16382"),"28-03-2018")).getTicketAvailability()!=null) {
+        if(MainServer.allTrains.get("16382")!=null && (!MainServer.seatAvailabilityMap.containsKey(new Tuple2<Train, String>(MainServer.allTrains.get("16382"),"28-03-2018")) ||
+                MainServer.seatAvailabilityMap.get(new Tuple2<Train, String>(MainServer.allTrains.get("16382"),"28-03-2018")).getTicketAvailability()==null)) {
             SeatAvailability seatAvailabilityTemp = new SeatAvailability(ApiUtils.getSeatAvailabilityForATrain(MainServer.allTrains.get("16382"), "28-03-2018"));
             MainServer.seatAvailabilityMap.put(new Tuple2<Train, String>(MainServer.allTrains.get("16382"), "28-03-2018"), seatAvailabilityTemp);
         }
